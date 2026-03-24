@@ -12,6 +12,21 @@ n8n + PostgreSQL + Grafana
 - loki → log storage
 - promtail → log collection
 
+## Data bases
+PostgreSQL runs inside Docker container (`lab-postgres`).
+Data is stored in Docker volume (persistent storage).
+
+**Databases**:
+- `n8n` — service database for n8n workflows
+- `career_upgrade_lab` — analytical / lab database
+
+**Access Model**
+- Internal access: Docker network (n8n → postgres)
+- External access: SSH tunnel only
+- Direct public access to PostgreSQL is disabled
+- Local access (via SSH tunnel):
+	- localhost:15432 → server localhost:5432
+
 ## Quick start 
 git clone _repo_  
 cd lab-infra  
@@ -27,13 +42,14 @@ docker compose up -d
 - cadvisor: http://localhost:8080
 - node-exporter: http://localhost:9100
 
-### Monitoring / Logging
+## Monitoring / Logging
 - Prometheus collects host/container metrics
 - Grafana visualizes metrics and logs
 - Loki stores centralized logs
 - Promtail collects Docker logs
 - node-exporter exposes VM metrics
 - cadvisor exposes container metrics
+
 ## Configuration
 All variables are defined in `.env`
 See `.env.example` for reference

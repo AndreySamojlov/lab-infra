@@ -15,7 +15,7 @@ docker compose restart
 | **Внешний доступ**   | http://104.248.41.116:5678  <br>http://104.248.41.116:3000<br>http://104.248.41.116:9090                                                                                                                                                                                                                                              | UI открывается                                                                                                                                        | → доступ извне есть |
 | **База данных**      | docker exec -it lab-postgres psql -U admin -d n8n                                                                                                                                                                                                                                                                                     | SELECT 1;                                                                                                                                             | → БД работает       |
 | **Логи**             | docker logs -t --tail 10 lab-n8n  <br>docker logs -t --tail 10 lab-postgres  <br>docker logs -t --tail 10 lab-grafana<br>docker logs -t --tail 10 lab-loki<br>docker logs -t --tail 10 lab-promtail<br>docker logs -t --tail 50 lab-prometheus<br>docker logs -t --tail 50 lab-node-exporter    docker logs -t --tail 50 lab-cadvisor | нет FATAL <br>/ crash<br>/ restart loop                                                                                                               | → сервисы стабильны |
-|                      |                                                                                                                                                                                                                                                                                                                                       |                                                                                                                                                       |                     |
+
 
 
 # COMMANDS
@@ -44,6 +44,25 @@ docker exec -it lab-postgres psql -U admin -d n8n
 SELECT 1;        -- проверка  
 \dt              -- список таблиц  
 \q               -- выход
+
+1. Start SSH tunnel: ssh -i ~/.ssh/id_ed25519 -L 15432:127.0.0.1:5432 root@104.248.41.116  
+2. Connect from DBeaver:  
+	- Host: localhost  
+	- Port: 15432  
+	- User: admin  
+3. List databases: docker exec -it lab-postgres psql -U admin -l  
+4. Backup database  
+	- mkdir -p /opt/backups/postgres  
+	- docker exec lab-postgres pg_dump -U admin -d career_upgrade_lab > /opt/backups/postgres/career_upgrade_lab.sql  
+5. Restore database  
+	- docker exec -i lab-postgres psql -U admin -d career_upgrade_lab < /opt/backups/postgres/career_upgrade_lab.sql  
+6. Test restore: 
+	- CREATE DATABASE career_upgrade_lab_test;  
+	- docker exec -i lab-postgres psql -U admin -d career_upgrade_lab_test < backup.sql  
+7. Basic checks:   
+	- SELECT current_database();  
+	- SELECT count(') FROM information_schema.tables;
+
 ## Git
 git init  
 git status                     # текущее состояние  
