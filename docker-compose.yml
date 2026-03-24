@@ -16,8 +16,6 @@ services:
     image: n8nio/n8n
     container_name: lab-n8n
     restart: always
-    ports:
-      - "5678:5678"
     environment:
       DB_TYPE: postgresdb
       DB_POSTGRESDB_HOST: postgres
@@ -36,8 +34,6 @@ services:
     image: grafana/grafana-oss:10.2.3
     container_name: lab-grafana
     restart: always
-    ports:
-      - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
@@ -113,8 +109,24 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
+  caddy:
+    image: caddy:2
+    container_name: lab-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - default
+
 volumes:
   postgres_data:
   grafana_data:
   prometheus_data:
   loki_data:
+  caddy_data:
+  caddy_config:

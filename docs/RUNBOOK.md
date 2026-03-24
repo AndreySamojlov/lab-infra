@@ -1,9 +1,9 @@
 # START / STOP
-
-docker compose up -d  
-docker compose down  
-docker compose restart
-
+```bash
+docker compose up -d  # Start all services
+docker compose down  # Stop all service
+docker compose restart  #Restart all services
+```
 # HEALTH-CHECK
 
 |                      | cmd                                                                                                                                                                                                                                                                                                                                   | check                                                                                                                                                 | result              |
@@ -14,7 +14,7 @@ docker compose restart
 | **Локальная сеть**   | curl http://localhost:5678  <br>curl http://localhost:3000<br>curl http://localhost:9090<br>curl http://localhost:3100                                                                                                                                                                                                                | HTTP response получен                                                                                                                                 | → сервисы отвечают  |
 | **Внешний доступ**   | http://104.248.41.116:5678  <br>http://104.248.41.116:3000<br>http://104.248.41.116:9090                                                                                                                                                                                                                                              | UI открывается                                                                                                                                        | → доступ извне есть |
 | **База данных**      | docker exec -it lab-postgres psql -U admin -d n8n                                                                                                                                                                                                                                                                                     | SELECT 1;                                                                                                                                             | → БД работает       |
-| **Логи**             | docker logs -t --tail 10 lab-n8n  <br>docker logs -t --tail 10 lab-postgres  <br>docker logs -t --tail 10 lab-grafana<br>docker logs -t --tail 10 lab-loki<br>docker logs -t --tail 10 lab-promtail<br>docker logs -t --tail 50 lab-prometheus<br>docker logs -t --tail 50 lab-node-exporter    docker logs -t --tail 50 lab-cadvisor | нет FATAL <br>/ crash<br>/ restart loop                                                                                                               | → сервисы стабильны |
+| **Логи**             | docker logs -t --tail 10 lab-n8n  <br>docker logs -t --tail 10 lab-postgres  <br>docker logs -t --tail 10 lab-grafana<br>docker logs -t --tail 10 lab-loki<br>docker logs -t --tail 10 lab-promtail<br>docker logs -t --tail 10 lab-prometheus<br>docker logs -t --tail 10 lab-node-exporter    docker logs -t --tail 10 lab-cadvisor | нет FATAL <br>/ crash<br>/ restart loop                                                                                                               | → сервисы стабильны |
 
 
 
@@ -62,6 +62,15 @@ SELECT 1;        -- проверка
 7. Basic checks:   
 	- SELECT current_database();  
 	- SELECT count(') FROM information_schema.tables;
+8. Backup (manual)  
+	  - cd /opt/lab-infra
+	  - ./scripts/backup-postgres.sh  
+	  - ls /opt/backups/postgres  
+9. Restore (test)  
+	  - CREATE DATABASE restore_test;  
+	  - docker exec -i lab-postgres psql -U admin -d restore_test < /opt/backups/postgres/<...>.sql  
+- Check:  
+	- SELECT count(*) FROM information_schema.tables;
 
 ## Git
 git init  

@@ -1,65 +1,154 @@
-# Lab Infra  
-Self-hosted platform for automation and analytics:  
-n8n + PostgreSQL + Grafana
-  
-## Architecture (high-level)  
-- n8n → orchestration
-- postgres → storage
-- grafana → dashboards / observability UI
-- prometheus → metrics storage
-- node-exporter → host metrics
-- cadvisor → container metrics
-- loki → log storage
-- promtail → log collection
+# Lab Infra
 
-## Data bases
-PostgreSQL runs inside Docker container (`lab-postgres`).
-Data is stored in Docker volume (persistent storage).
+Personal self-hosted engineering platform for building and operating applied automation, analytics, and observability in a cloud setup.
+Primary goals:
+- develop automation workflows
+- run analytical experiments
+- operate production-like infrastructure
+- build reproducible engineering artifacts
 
-**Databases**:
-- `n8n` — service database for n8n workflows
-- `career_upgrade_lab` — analytical / lab database
+## 2. Architecture
+```mermaid
+flowchart TB
+    user["User / Browser"]
+    dns["DNS"]
+    caddy["Caddy<br/>HTTPS + Reverse Proxy"]
 
-**Access Model**
+    subgraph vm["Cloud VM"]
+        subgraph docker["Docker Services"]
+            grafana["Grafana"]
+            n8n["n8n"]
+            observability["Observability Stack"]
+            postgres["PostgreSQL"]
+        end
+    end
+
+    le["Let's Encrypt"]
+
+    user --> dns --> caddy
+    caddy --> grafana
+    caddy --> n8n
+    grafana --> observability
+    n8n --> postgres
+    caddy -. certs .-> le
+```
+
+| Service           | Port | Purpose                            |
+| ----------------- | ---: | ---------------------------------- |
+| **n8n**           | 5678 | orchestration automation workflows |
+| **Grafana**       | 3000 | dashboards / UI                    |
+| **Prometheus**    | 9090 | host/container metrics storage     |
+| **Loki**          | 3100 | log storage                        |
+| **Node Exporter** | 9100 | host metrics collection            |
+| **cAdvisor**      | 8080 | container metrics collection       |
+| **PostgreSQL**    | 5432 | operational and analytical storage |
+| **Promtail**      |      | log collection                     |
+All services run via Docker Compose.
+
+Service interactions:
+- n8n uses PostgreSQL as its primary persistence layer
+- Prometheus scrapes metrics from Node Exporter and cAdvisor
+- Grafana uses Prometheus and Loki as data sources
+- Promtail collects Docker logs and sends them to Loki
+Persistent data is stored in Docker volumes.
+
+## 4. Quick Start
+
+```bash
+git clone <repo>
+cd lab-infra
+cp .env.example .env # fill required variables
+docker compose up -d
+```
+
+Verification:
+```bash
+docker compose ps
+curl http://localhost:3000
+curl http://localhost:5678
+curl http://localhost:9090/-/healthy
+curl http://localhost:3100/ready
+```
+
+## 6. Access Model
+
+Cloud access:
+- `http://104.248.41.116
+- ssh root@104.248.41.116
+- ssh root@lab-do
+
+**PostgreSQL**
 - Internal access: Docker network (n8n → postgres)
 - External access: SSH tunnel only
 - Direct public access to PostgreSQL is disabled
 - Local access (via SSH tunnel):
 	- localhost:15432 → server localhost:5432
 
-## Quick start 
-git clone _repo_  
-cd lab-infra  
-cp .env.example .env  
-docker compose up -d
+## 7. Data Model
 
-## Access
-- cloud: http://104.248.41.116
-- n8n: [http://localhost:5678](http://localhost:5678)
-- grafana: [http://localhost:3000](http://localhost:3000)
-- prometheus: http://localhost:9090
-- loki: http://localhost:3100
-- cadvisor: http://localhost:8080
-- node-exporter: http://localhost:9100
+PostgreSQL runs inside Docker container (`lab-postgres`).
+PostgreSQL data is stored in Docker volumes (persistent storage).
+**Databases**:
+- `n8n` — service database
+- `career_upgrade_lab` — analytical database
+**Storage**:
+- PostgreSQL → Docker volume
+- backups → `/opt/backups/postgres`
 
-## Monitoring / Logging
-- Prometheus collects host/container metrics
-- Grafana visualizes metrics and logs
-- Loki stores centralized logs
-- Promtail collects Docker logs
-- node-exporter exposes VM metrics
-- cadvisor exposes container metrics
+## 8. Backup Policy
 
-## Configuration
-All variables are defined in `.env`
-See `.env.example` for reference
+- schedule: daily (cron)
+	- databases backup
+	- git autocommit+push
+- retention: 7 days
+- location: `/opt/backups/postgres`
+Manual backup:
+```bash
+./scripts/backup-postgres.sh
+./scripts/git-auto-commit.sh
+```
 
-## Documentation
+## 10. Repository Structure
+
+```text
 lab-infra/
+├── docker-compose.yml
+├── .env.example
 ├── README.md
-└── docs/
-    └── RUNBOOK.md
+├── docs/
+│   └── RUNBOOK.md
+├── monitoring/
+│   ├── loki/
+│   ├── prometheus/
+│   └── promtail/
+├── scripts/
+│   ├── backup-postgres.sh
+│   └── git-auto-commit.sh
+└── .obsidian/
+```
 
-## Notes
-- Do not commit `.env`
-- System is fully reproducible from this repository
+## 11. Configuration
+
+All environment variables are defined in `.env`.
+Template:
+```env
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=<password>
+POSTGRES_DB=n8n
+
+GRAFANA_ADMIN_USER=admin
+GRAFANA_ADMIN_PASSWORD=<password>
+
+SERVER_IP=<ip>
+```
+Do not commit `.env`.
+
+## 12. Operations
+
+Operational procedures are described in:
+`docs/RUNBOOK.md`
+Includes:
+- health checks
+- restart procedures
+- logs inspection
+- backup and restore

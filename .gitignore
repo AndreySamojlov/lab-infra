@@ -1,2 +1,4 @@
+/opt/backups/
+/backups/
 .env
 *.log

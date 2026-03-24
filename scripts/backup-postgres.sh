@@ -15,3 +15,7 @@ for DB in "${DBS[@]}"; do
   docker exec "$CONTAINER" pg_dump -U "$USER" -d "$DB" > "$BACKUP_DIR/${DB}_$DATE.sql"
   echo "Backup completed: $BACKUP_DIR/${DB}_$DATE.sql"
 done
+
+
+# --- rotation: keep last 7 days ---
+find "$BACKUP_DIR" -type f -name "*.sql" -mtime +7 -print -delete
