@@ -1,7 +1,7 @@
 grafana.samandrey.work {
-    reverse_proxy grafana:3000
+    reverse_proxy oauth2-proxy-grafana:4180
 }
 
 n8n.samandrey.work {
-    reverse_proxy n8n:5678
+    reverse_proxy oauth2-proxy-n8n:4180
 }
