@@ -7,7 +7,7 @@ Primary goals:
 - operate production-like infrastructure
 - build reproducible engineering artifacts
 
-## 2. Architecture
+## 1. Architecture
 ```mermaid
 flowchart TB
     user["User / Browser"]
@@ -32,6 +32,9 @@ flowchart TB
     n8n --> postgres
     caddy -. certs .-> le
 ```
+- `n8n.samandrey.work` → `Caddy` → `oauth2-proxy-n8n` → `n8n`
+- `grafana.samandrey.work` → `Caddy` → `oauth2-proxy-grafana` → `Grafana`
+- `https://n8n.samandrey.work/rest/oauth2-credential/callback` → `Caddy` → `n8n`
 
 | Service           | Port | Purpose                            |
 | ----------------- | ---: | ---------------------------------- |
@@ -52,7 +55,7 @@ Service interactions:
 - Promtail collects Docker logs and sends them to Loki
 Persistent data is stored in Docker volumes.
 
-## 4. Quick Start
+## 2. Quick Start
 
 ```bash
 git clone <repo>
@@ -63,19 +66,37 @@ docker compose up -d
 
 Verification:
 ```bash
-docker compose ps
-curl http://localhost:3000
-curl http://localhost:5678
-curl http://localhost:9090/-/healthy
-curl http://localhost:3100/ready
+- infrastructure:
+    - docker compose ps
+    - docker logs ...
+- external:
+    - curl -vk https://n8n.samandrey.work
+    - curl -vk https://grafana.samandrey.work
+- internal:
+    - docker exec ... wget http://n8n:5678
+    - curl http://localhost:9090/-/healthy
+    - curl http://localhost:3100/ready
 ```
 
-## 6. Access Model
+## 3. Access Model
 
-Cloud access:
-- `http://104.248.41.116
+**Cloud access:**
+- `http://104.248.41.116`
 - ssh root@104.248.41.116
 - ssh root@lab-do
+
+**Domens**:
+- `n8n.samandrey.work`
+- `grafana.samandrey.work`
+- `oauth2.samandrey.work`
+
+**Google OAuth:**
+- Google OAuth is used in two different roles:
+	- for UI login via oauth2-proxy
+	- for credentials within n8n
+- these are two different OAuth flows
+- for credentials within n8n, the callback path /rest/oauth2-credential/callback should not be intercepted by oauth2-proxy
+
 
 **PostgreSQL**
 - Internal access: Docker network (n8n → postgres)
@@ -84,7 +105,7 @@ Cloud access:
 - Local access (via SSH tunnel):
 	- localhost:15432 → server localhost:5432
 
-## 7. Data Model
+## 4. Data Model
 
 PostgreSQL runs inside Docker container (`lab-postgres`).
 PostgreSQL data is stored in Docker volumes (persistent storage).
@@ -95,55 +116,68 @@ PostgreSQL data is stored in Docker volumes (persistent storage).
 - PostgreSQL → Docker volume
 - backups → `/opt/backups/postgres`
 
-## 8. Backup Policy
+## 5. Backup Policy
 
 - schedule: daily (cron)
 	- databases backup
 	- git autocommit+push
 - retention: 7 days
 - location: `/opt/backups/postgres`
-Manual backup:
+**Manual backup**:
 ```bash
 ./scripts/backup-postgres.sh
 ./scripts/git-auto-commit.sh
 ```
 
-## 10. Repository Structure
+## 6. Repository Structure
 
 ```text
-lab-infra/
-├── docker-compose.yml
-├── .env.example
 ├── README.md
-├── docs/
-│   └── RUNBOOK.md
-├── monitoring/
-│   ├── loki/
-│   ├── prometheus/
-│   └── promtail/
-├── scripts/
-│   ├── backup-postgres.sh
-│   └── git-auto-commit.sh
-└── .obsidian/
+├── caddy
+│   └── Caddyfile
+├── docker-compose.yml
+├── docs
+│   └── RUNBOOK.md
+├── monitoring
+│   ├── loki
+│   │   └── config.yml
+│   ├── prometheus
+│   │   └── prometheus.yml
+│   └── promtail
+│       └── config.yml
+├── scripts
+│   ├── backup-postgres.sh
+│   └── git-auto-commit.sh
+└── test.js
 ```
 
-## 11. Configuration
+## 7. Configuration
 
 All environment variables are defined in `.env`.
 Template:
 ```env
 POSTGRES_USER=admin
-POSTGRES_PASSWORD=<password>
+POSTGRES_PASSWORD=db_admin_pass
 POSTGRES_DB=n8n
 
 GRAFANA_ADMIN_USER=admin
-GRAFANA_ADMIN_PASSWORD=<password>
+GRAFANA_ADMIN_PASSWORD=admin
 
-SERVER_IP=<ip>
+GOOGLE_OAUTH_CLIENT_ID=277350617242-58c8s8dmj9j0sv1m8acj26kh33e0fp26.apps.googleuserc>
+GOOGLE_OAUTH_CLIENT_SECRET=<secret>
+
+OAUTH2_PROXY_GRAFANA_COOKIE_SECRET=<secret>
+OAUTH2_PROXY_N8N_COOKIE_SECRET=<secret>
+ALLOWED_EMAIL=samojlov.andrey@gmail.com
+
+SERVER_IP=104.248.41.116
+
+N8N_SECURE_COOKIE=false
+N8N_ENCRYPTION_KEY=<key>
 ```
 Do not commit `.env`.
 
-## 12. Operations
+## 8. Operations
 
 Operational procedures are described in:
 `docs/RUNBOOK.md`

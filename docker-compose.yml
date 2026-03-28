@@ -26,7 +26,12 @@ services:
       N8N_HOST: n8n.samandrey.work
       N8N_PORT: 5678
       N8N_PROTOCOL: https
+      N8N_EDITOR_BASE_URL: https://n8n.samandrey.work
+      WEBHOOK_URL: https://n8n-tech.samandrey.work
       N8N_SECURE_COOKIE: "true"
+      N8N_SKIP_AUTH_ON_OAUTH_CALLBACK: "true"
+      N8N_PROXY_HOPS: "1"
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
     depends_on:
       - postgres
 

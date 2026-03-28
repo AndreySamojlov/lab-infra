@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/RUNBOOK.md",
+                "file": "README.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "RUNBOOK"
+              "title": "README"
             }
           }
         ]
@@ -185,7 +185,7 @@
   },
   "active": "a0f5ccd7139d1bfd",
   "lastOpenFiles": [
-    "README.md",
-    "docs/RUNBOOK.md"
+    "docs/RUNBOOK.md",
+    "README.md"
   ]
 }
