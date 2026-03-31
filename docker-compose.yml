@@ -148,23 +148,6 @@ services:
       OAUTH2_PROXY_PASS_BASIC_AUTH: "false"
       OAUTH2_PROXY_PASS_AUTHORIZATION_HEADER: "false"
 
-  oauth2-proxy-n8n:
-    image: quay.io/oauth2-proxy/oauth2-proxy:latest
-    container_name: lab-oauth2-proxy-n8n
-    restart: unless-stopped
-    environment:
-      OAUTH2_PROXY_PROVIDER: google
-      OAUTH2_PROXY_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID}
-      OAUTH2_PROXY_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET}
-      OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_N8N_COOKIE_SECRET}
-      OAUTH2_PROXY_EMAIL_DOMAINS: "*"
-      OAUTH2_PROXY_ALLOWED_EMAILS: ${ALLOWED_EMAIL}
-      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
-      OAUTH2_PROXY_REDIRECT_URL: https://n8n.samandrey.work/oauth2/callback
-      OAUTH2_PROXY_UPSTREAMS: http://n8n:5678
-      OAUTH2_PROXY_COOKIE_SECURE: "true"
-      OAUTH2_PROXY_SET_XAUTHREQUEST: "true"
-
 volumes:
   postgres_data:
   grafana_data:
