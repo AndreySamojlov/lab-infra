@@ -157,11 +157,11 @@ All environment variables are defined in `.env`.
 Template:
 ```env
 POSTGRES_USER=admin
-POSTGRES_PASSWORD=db_admin_pass
+POSTGRES_PASSWORD=<pass>
 POSTGRES_DB=n8n
 
 GRAFANA_ADMIN_USER=admin
-GRAFANA_ADMIN_PASSWORD=admin
+GRAFANA_ADMIN_PASSWORD=<pass>
 
 GOOGLE_OAUTH_CLIENT_ID=277350617242-58c8s8dmj9j0sv1m8acj26kh33e0fp26.apps.googleuserc>
 GOOGLE_OAUTH_CLIENT_SECRET=<secret>
