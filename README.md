@@ -32,7 +32,7 @@ flowchart TB
     n8n --> postgres
     caddy -. certs .-> le
 ```
-- `n8n.samandrey.work` → `Caddy` → `oauth2-proxy-n8n` → `n8n`
+- `n8n.samandrey.work` → `Caddy` → `n8n`
 - `grafana.samandrey.work` → `Caddy` → `oauth2-proxy-grafana` → `Grafana`
 - `https://n8n.samandrey.work/rest/oauth2-credential/callback` → `Caddy` → `n8n`
 
@@ -70,8 +70,17 @@ Verification:
     - docker compose ps
     - docker logs ...
 - external:
-    - curl -vk https://n8n.samandrey.work
-    - curl -vk https://grafana.samandrey.work
+	# Проверка DNS (первый шаг!)  
+	nslookup n8n.samandrey.work  
+	nslookup grafana.samandrey.work  
+	  
+	# Проверка через Caddy локально (без DNS)  
+	curl -vk --resolve n8n.samandrey.work:443:127.0.0.1 https://n8n.samandrey.work  
+	curl -vk --resolve grafana.samandrey.work:443:127.0.0.1 https://grafana.samandrey.work  
+	  
+	# Проверка backend (внутри docker)  
+	docker exec lab-caddy wget -qO- http://n8n:5678 | head  
+	docker exec lab-caddy wget -qO- http://grafana:3000 | head
 - internal:
     - docker exec ... wget http://n8n:5678
     - curl http://localhost:9090/-/healthy
@@ -172,7 +181,7 @@ ALLOWED_EMAIL=samojlov.andrey@gmail.com
 
 SERVER_IP=104.248.41.116
 
-N8N_SECURE_COOKIE=false
+N8N_SECURE_COOKIE=true
 N8N_ENCRYPTION_KEY=<key>
 ```
 Do not commit `.env`.
