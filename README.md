@@ -51,7 +51,7 @@ All services run via Docker Compose.
 
 Service interactions:
 - n8n uses PostgreSQL as its primary persistence layer
-- Prometheus scrapes metrics from Node Exporter and cAdvisor
+- Prometheus scrapes metrics from Node Exporter, cAdvisor, and n8n
 - Grafana uses Prometheus and Loki as data sources
 - Promtail collects Docker logs and sends them to Loki
 Persistent data is stored in Docker volumes.
