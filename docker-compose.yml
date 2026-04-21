@@ -129,6 +129,9 @@ services:
     networks:
       - default
 
+  # Only Grafana is behind oauth2-proxy (Google SSO).
+  # n8n is exposed directly to Caddy and uses its own built-in user
+  # management (email + password). See README section 3 for the access model.
   oauth2-proxy-grafana:
     image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.1
     container_name: lab-oauth2-proxy-grafana
