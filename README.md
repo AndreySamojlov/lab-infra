@@ -18,6 +18,7 @@ flowchart TB
         subgraph docker["Docker Services"]
             grafana["Grafana"]
             n8n["n8n"]
+            n8nMcp["n8n-mcp"]
             observability["Observability Stack"]
             postgres["PostgreSQL"]
         end
@@ -28,18 +29,22 @@ flowchart TB
     user --> dns --> caddy
     caddy --> grafana
     caddy --> n8n
+    caddy --> n8nMcp
     grafana --> observability
     n8n --> postgres
+    n8nMcp --> n8n
     caddy -. certs .-> le
 ```
 - `n8n.samandrey.work` → `Caddy` → `n8n`
 - `n8n-tech.samandrey.work` → `Caddy` → `n8n` (incoming webhooks / `WEBHOOK_URL`)
+- `n8n-mcp.samandrey.work` → `Caddy` → `n8n-mcp`
 - `grafana.samandrey.work` → `Caddy` → `oauth2-proxy-grafana` → `Grafana`
 - `https://n8n.samandrey.work/rest/oauth2-credential/callback` → `Caddy` → `n8n`
 
 | Service           | Port | Purpose                            |
 | ----------------- | ---: | ---------------------------------- |
 | **n8n**           | 5678 | orchestration automation workflows |
+| **n8n-mcp**       | 3000 | MCP server for AI-assisted n8n workflows |
 | **Grafana**       | 3000 | dashboards / UI                    |
 | **Prometheus**    | 9090 | host/container metrics storage     |
 | **Loki**          | 3100 | log storage                        |
@@ -51,6 +56,7 @@ All services run via Docker Compose.
 
 Service interactions:
 - n8n uses PostgreSQL as its primary persistence layer
+- n8n-mcp uses the n8n API over the internal Docker network
 - Prometheus scrapes metrics from Node Exporter, cAdvisor, and n8n
 - Grafana uses Prometheus and Loki as data sources
 - Promtail collects Docker logs and sends them to Loki
@@ -73,14 +79,17 @@ Verification:
 - external:
 	# Проверка DNS (первый шаг!)  
 	nslookup n8n.samandrey.work  
+	nslookup n8n-mcp.samandrey.work  
 	nslookup grafana.samandrey.work  
 	  
 	# Проверка через Caddy локально (без DNS)  
 	curl -vk --resolve n8n.samandrey.work:443:127.0.0.1 https://n8n.samandrey.work  
+	curl -vk --resolve n8n-mcp.samandrey.work:443:127.0.0.1 https://n8n-mcp.samandrey.work/health  
 	curl -vk --resolve grafana.samandrey.work:443:127.0.0.1 https://grafana.samandrey.work  
 	  
 	# Проверка backend (внутри docker)  
 	docker exec lab-caddy wget -qO- http://n8n:5678 | head  
+	docker exec lab-caddy wget -qO- http://n8n-mcp:3000/health  
 	docker exec lab-caddy wget -qO- http://grafana:3000 | head
 - internal:
     - docker exec ... wget http://n8n:5678
@@ -98,6 +107,7 @@ Verification:
 **Domains**:
 - `n8n.samandrey.work`
 - `n8n-tech.samandrey.work` (`WEBHOOK_URL` for incoming n8n webhooks)
+- `n8n-mcp.samandrey.work` (`n8n-mcp` endpoint; MCP clients use the `/mcp` path)
 - `grafana.samandrey.work`
 
 **Google OAuth:**
@@ -182,6 +192,9 @@ ALLOWED_EMAIL=<your-email@example.com>
 SERVER_IP=<YOUR_SERVER_IP>
 
 N8N_ENCRYPTION_KEY=<key>
+N8N_MCP_API_KEY=<n8n-api-key-from-settings-api>
+N8N_MCP_AUTH_TOKEN=<generate-32-plus-char-random-token>
+N8N_MCP_LOG_LEVEL=info
 ```
 Do not commit `.env`.
 
@@ -194,6 +207,7 @@ Includes:
 - restart procedures
 - logs inspection
 - backup and restore
+- `n8n-mcp` setup and smoke-test notes in `docs/N8N-MCP.md`
 
 ## 9. Versions and Upgrade Policy
 
@@ -204,6 +218,7 @@ All container images are pinned to exact `major.minor.patch` tags in `docker-com
 | Service       | Image                                    | Tag        |
 |---------------|------------------------------------------|------------|
 | n8n           | `n8nio/n8n`                              | `2.11.4`   |
+| n8n-mcp       | `ghcr.io/czlonkowski/n8n-mcp/n8n-mcp`    | `latest`   |
 | postgres      | `postgres`                               | `15.17`    |
 | caddy         | `caddy`                                  | `2.11.2`   |
 | grafana       | `grafana/grafana-oss`                    | `10.2.3`   |
@@ -215,6 +230,8 @@ All container images are pinned to exact `major.minor.patch` tags in `docker-com
 | cadvisor      | `gcr.io/cadvisor/cadvisor`               | `v0.55.1`  |
 
 The `v` prefix matches the vendor's own tag scheme on the registry — some projects use it (prom/*, cadvisor, oauth2-proxy), others don't (n8n, postgres, caddy, grafana, loki).
+
+Temporary exception: `n8n-mcp` currently uses the published GHCR path with `:latest` during the initial rollout. After the first stable usage cycle, switch it to a digest pin for reproducibility.
 
 ### Upgrade policy: MANUAL, per service
 
@@ -234,3 +251,4 @@ Security patches: watch the upstream release pages (GitHub releases, CVE feeds) 
 **Current upgrade debt** (tracked separately in the project context file):
 
 - Grafana `10.2.3` is EOL — plan migration to `11.x`.
+

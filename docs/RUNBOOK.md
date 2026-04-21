@@ -37,9 +37,11 @@ docker stats                   # нагрузка (CPU / RAM)
 docker inspect lab-n8n         # подробности контейнера
 ## Logs
 docker logs --tail 50 lab-n8n  
+docker logs --tail 50 lab-n8n-mcp  
 docker logs --tail 50 lab-postgres  
 docker logs --tail 50 lab-grafana  
 docker logs -f lab-n8n         # realtime
+docker logs -f lab-n8n-mcp
 ## PostgreSQL
 docker exec -it lab-postgres psql -U admin -d n8n
 Внутри:
@@ -99,3 +101,8 @@ git log --oneline             # история
 **cAdvisor**
 - UI / endpoint: http://localhost:8080
 - container metrics source for Prometheus
+
+## n8n-mcp
+docker exec lab-caddy wget -qO- http://n8n-mcp:3000/health
+curl -vk --resolve n8n-mcp.samandrey.work:443:127.0.0.1 https://n8n-mcp.samandrey.work/health
+TOKEN=$(grep '^N8N_MCP_AUTH_TOKEN=' .env | cut -d= -f2-) && curl -i -X POST https://n8n-mcp.samandrey.work/mcp -H "Authorization: Bearer $TOKEN" -H "Accept: application/json, text/event-stream" -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl-smoke-test","version":"1.0.0"}}}'
