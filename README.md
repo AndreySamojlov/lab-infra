@@ -154,10 +154,9 @@ PostgreSQL data is stored in Docker volumes (persistent storage).
 │   │   └── prometheus.yml
 │   └── promtail
 │       └── config.yml
-├── scripts
-│   ├── backup-postgres.sh
-│   └── git-auto-commit.sh
-└── test.js
+└── scripts
+    ├── backup-postgres.sh
+    └── git-auto-commit.sh
 ```
 
 ## 7. Configuration
@@ -195,3 +194,43 @@ Includes:
 - restart procedures
 - logs inspection
 - backup and restore
+
+## 9. Versions and Upgrade Policy
+
+All container images are pinned to exact `major.minor.patch` tags in `docker-compose.yml`. No `:latest`, no moving tags. A container restart (reboot, OOM, Docker daemon reload, full VM rebuild from the repo) always returns the same image that was tested — never a surprise new release.
+
+### Pinned versions (as of 2026-04-21)
+
+| Service       | Image                                    | Tag        |
+|---------------|------------------------------------------|------------|
+| n8n           | `n8nio/n8n`                              | `2.11.4`   |
+| postgres      | `postgres`                               | `15.17`    |
+| caddy         | `caddy`                                  | `2.11.2`   |
+| grafana       | `grafana/grafana-oss`                    | `10.2.3`   |
+| oauth2-proxy  | `quay.io/oauth2-proxy/oauth2-proxy`      | `v7.15.1`  |
+| prometheus    | `prom/prometheus`                        | `v3.10.0`  |
+| loki          | `grafana/loki`                           | `3.0.0`    |
+| promtail      | `grafana/promtail`                       | `3.0.0`    |
+| node-exporter | `prom/node-exporter`                     | `v1.10.2`  |
+| cadvisor      | `gcr.io/cadvisor/cadvisor`               | `v0.55.1`  |
+
+The `v` prefix matches the vendor's own tag scheme on the registry — some projects use it (prom/*, cadvisor, oauth2-proxy), others don't (n8n, postgres, caddy, grafana, loki).
+
+### Upgrade policy: MANUAL, per service
+
+Images are **not** auto-upgraded. Running `docker compose pull` without a tag change is intentionally a no-op. To upgrade a service:
+
+1. Review the upstream changelog / release notes for the target version. Check for breaking changes (auth schema, config format, DB migrations).
+2. Edit the tag in `docker-compose.yml` in a focused commit (`chore(deps): bump <service> X -> Y`, with the changelog link in the commit body).
+3. `docker compose pull <service>` — fetch the new image.
+4. `docker compose up -d <service>` — restart only that service.
+5. Verify: service health check, UI login, a sanity workflow run, relevant logs clean.
+6. On regression: revert the tag in git, `docker compose up -d <service>` to roll back.
+
+Security patches: watch the upstream release pages (GitHub releases, CVE feeds) for each pinned version. Apply on review, not automatically.
+
+**Why not `:latest`**: an automatic pull on restart can pick up a new major, break auth/UI/schema, and leave the platform in an unbootable state with no correlation to when the breakage started. Pinning makes upgrades a deliberate, reviewable action.
+
+**Current upgrade debt** (tracked separately in CLAUDE.md section 10):
+
+- Grafana `10.2.3` is EOL — plan migration to `11.x`.
