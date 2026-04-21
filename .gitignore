@@ -2,3 +2,14 @@
 /backups/
 .env
 *.log
+
+# Editor / OS junk
+*.save
+*.swp
+*~
+.*.swp
+.DS_Store
+Thumbs.db
+
+# Obsidian config — used by some contributors as a viewer, not part of infra
+.obsidian/
