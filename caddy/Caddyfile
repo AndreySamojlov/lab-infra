@@ -6,6 +6,9 @@ n8n.samandrey.work {
     reverse_proxy n8n:5678
 }
 
+n8n-tech.samandrey.work {
+    reverse_proxy n8n:5678
+}
 
 
 

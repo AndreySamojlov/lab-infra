@@ -33,6 +33,7 @@ flowchart TB
     caddy -. certs .-> le
 ```
 - `n8n.samandrey.work` → `Caddy` → `n8n`
+- `n8n-tech.samandrey.work` → `Caddy` → `n8n` (incoming webhooks / `WEBHOOK_URL`)
 - `grafana.samandrey.work` → `Caddy` → `oauth2-proxy-grafana` → `Grafana`
 - `https://n8n.samandrey.work/rest/oauth2-credential/callback` → `Caddy` → `n8n`
 
@@ -94,10 +95,10 @@ Verification:
 - ssh root@104.248.41.116
 - ssh root@lab-do
 
-**Domens**:
+**Domains**:
 - `n8n.samandrey.work`
+- `n8n-tech.samandrey.work` (`WEBHOOK_URL` for incoming n8n webhooks)
 - `grafana.samandrey.work`
-- `oauth2.samandrey.work`
 
 **Google OAuth:**
 - Google OAuth is used in two different roles:
@@ -129,9 +130,10 @@ PostgreSQL data is stored in Docker volumes (persistent storage).
 
 - schedule: daily (cron)
 	- databases backup
-	- git autocommit+push
+	- local git snapshot of the working tree
 - retention: 7 days
 - location: `/opt/backups/postgres`
+The repository safety script does **not** push to any remote. It records local-only recovery snapshots on branch `auto-snapshots`.
 **Manual backup**:
 ```bash
 ./scripts/backup-postgres.sh
@@ -171,15 +173,14 @@ POSTGRES_DB=n8n
 GRAFANA_ADMIN_USER=admin
 GRAFANA_ADMIN_PASSWORD=<pass>
 
-GOOGLE_OAUTH_CLIENT_ID=277350617242-58c8s8dmj9j0sv1m8acj26kh33e0fp26.apps.googleuserc>
+GOOGLE_OAUTH_CLIENT_ID=<google-oauth-client-id>
 GOOGLE_OAUTH_CLIENT_SECRET=<secret>
 
 OAUTH2_PROXY_GRAFANA_COOKIE_SECRET=<secret>
-ALLOWED_EMAIL=samojlov.andrey@gmail.com
+ALLOWED_EMAIL=<your-email@example.com>
 
-SERVER_IP=104.248.41.116
+SERVER_IP=<YOUR_SERVER_IP>
 
-N8N_SECURE_COOKIE=true
 N8N_ENCRYPTION_KEY=<key>
 ```
 Do not commit `.env`.
@@ -230,6 +231,6 @@ Security patches: watch the upstream release pages (GitHub releases, CVE feeds) 
 
 **Why not `:latest`**: an automatic pull on restart can pick up a new major, break auth/UI/schema, and leave the platform in an unbootable state with no correlation to when the breakage started. Pinning makes upgrades a deliberate, reviewable action.
 
-**Current upgrade debt** (tracked separately in CLAUDE.md section 10):
+**Current upgrade debt** (tracked separately in the project context file):
 
 - Grafana `10.2.3` is EOL — plan migration to `11.x`.
