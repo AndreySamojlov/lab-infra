@@ -78,8 +78,8 @@ docker logs -f lab-n8n-mcp
 
 ## Image pin
 
-The platform pins:
+The platform currently uses:
 
-- `ghcr.io/czlonkowski/n8n-mcp:v2.47.13`
+- `ghcr.io/czlonkowski/n8n-mcp/n8n-mcp:latest`
 
-Update only by editing `docker-compose.yml` in a focused dependency-change commit.
+This is intentional for the initial rollout because that is the currently published package path in GHCR. After the first successful deployment, it is worth following up with a digest pin for reproducibility.
