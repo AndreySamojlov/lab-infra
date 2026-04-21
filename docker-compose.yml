@@ -38,6 +38,22 @@ services:
     depends_on:
       - postgres
 
+  n8n-mcp:
+    image: ghcr.io/czlonkowski/n8n-mcp:v2.47.13
+    container_name: lab-n8n-mcp
+    restart: unless-stopped
+    environment:
+      N8N_MODE: "true"
+      MCP_MODE: http
+      PORT: 3000
+      LOG_LEVEL: ${N8N_MCP_LOG_LEVEL:-info}
+      N8N_API_URL: http://n8n:5678
+      N8N_API_KEY: ${N8N_MCP_API_KEY}
+      MCP_AUTH_TOKEN: ${N8N_MCP_AUTH_TOKEN}
+      AUTH_TOKEN: ${N8N_MCP_AUTH_TOKEN}
+    depends_on:
+      - n8n
+
   grafana:
     image: grafana/grafana-oss:10.2.3
     container_name: lab-grafana

@@ -10,5 +10,7 @@ n8n-tech.samandrey.work {
     reverse_proxy n8n:5678
 }
 
-
+n8n-mcp.samandrey.work {
+    reverse_proxy n8n-mcp:3000
+}
 
