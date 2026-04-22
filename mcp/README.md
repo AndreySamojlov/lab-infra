@@ -5,25 +5,32 @@ future clients) connect to the MCP servers this platform hosts.
 
 ## Contents
 
-- `servers.yaml` — manifest. **Edit this file, not the rendered outputs.**
+- `servers.json` — manifest. **Edit this file, not the rendered outputs.**
 - `rendered/` — per-client configs generated from the manifest.
   Checked into git on purpose, with placeholders in place of secrets.
 
+## Requirements
+
+Only Python 3 (stdlib). No `pip install` needed — the format is plain JSON
+and the generator imports only standard library modules. This is a deliberate
+reproducibility choice: a clean `git clone` is enough to regenerate the
+client configs.
+
 ## How to change the landscape
 
-1. Edit `servers.yaml` (add or remove a server, change `enabled_for`, update URL).
-2. Run the renderer:
+1. Edit `servers.json` (add or remove a server, change `enabled_for`, update URL).
+2. Run the renderer from the repo root:
    ```bash
-   python scripts/render-mcp-configs.py
+   python3 scripts/render-mcp-configs.py
    ```
-3. Commit `servers.yaml` and the updated `rendered/` together in one commit.
+3. Commit `servers.json` and the updated `rendered/` together in one commit.
 
 ## CI / pre-commit guard
 
 To verify that `rendered/` is in sync with the manifest:
 
 ```bash
-python scripts/render-mcp-configs.py --check
+python3 scripts/render-mcp-configs.py --check
 ```
 
 Exits non-zero if anything drifts.

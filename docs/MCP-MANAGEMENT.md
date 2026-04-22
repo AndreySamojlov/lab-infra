@@ -18,7 +18,7 @@ list drifts.
 
 The approach here is a **client-side manifest + generator**:
 
-- `mcp/servers.yaml` is the single source of truth.
+- `mcp/servers.json` is the single source of truth.
 - `scripts/render-mcp-configs.py` reads the manifest and writes one
   file per client into `mcp/rendered/`.
 - Each rendered file uses `${ENV_VAR}` placeholders instead of real
@@ -28,6 +28,13 @@ The approach here is a **client-side manifest + generator**:
 - Clients still have their own native config files (the Cowork UI,
   `~/.codex/config.toml`). The manifest does not replace them —
   it feeds them.
+
+The generator uses only the Python standard library — no `pip install`,
+no `requirements.txt`. That is a deliberate reproducibility constraint:
+a fresh clone of this repo plus `python3 scripts/render-mcp-configs.py`
+must produce the intended outputs without any additional setup. JSON
+was chosen over YAML/TOML for the manifest specifically so this property
+holds on any Python 3.x.
 
 No gateway is running between clients and servers right now. Each
 client talks directly to each server by URL.
@@ -60,7 +67,7 @@ triggers above, the manifest-and-generator design stays.
 platform-repo/
 ├── mcp/
 │   ├── README.md
-│   ├── servers.yaml          ← edit this
+│   ├── servers.json          ← edit this
 │   └── rendered/             ← generated; committed with placeholders
 │       ├── claude-cowork.md
 │       └── codex.toml
@@ -68,13 +75,25 @@ platform-repo/
     └── render-mcp-configs.py
 ```
 
+## Bootstrap on a fresh clone
+
+```bash
+git clone <repo-url> lab-infra
+cd lab-infra
+python3 scripts/render-mcp-configs.py --check
+```
+
+If `--check` prints `mcp/rendered/ matches mcp/servers.json`, the client
+side is reproducible. If it reports drift, run the script without `--check`
+and commit the regenerated files.
+
 ## Common tasks
 
 ### Add a new server
 
-1. Add a block under `servers:` in `mcp/servers.yaml`.
+1. Add a block under `servers` in `mcp/servers.json`.
 2. Choose which clients should see it via `enabled_for`.
-3. Run `python scripts/render-mcp-configs.py`.
+3. Run `python3 scripts/render-mcp-configs.py`.
 4. Commit the manifest change and the refreshed `rendered/` files together.
 
 If the new server is also a platform-hosted service, add the service to
@@ -84,7 +103,7 @@ reproducible from a clean clone.
 
 ### Add a new client
 
-1. Add a block under `clients:` in `mcp/servers.yaml`. Pick a `kind`
+1. Add a block under `clients` in `mcp/servers.json`. Pick a `kind`
    that the renderer knows how to handle (currently
    `cowork-custom-connector`, `codex-cli`).
 2. If the client is of a new `kind`, teach the renderer about it:

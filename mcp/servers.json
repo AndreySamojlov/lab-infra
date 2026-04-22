@@ -1,0 +1,35 @@
+{
+  "_comment": [
+    "Single source of truth for MCP server configuration.",
+    "Edit this file, then run: python3 scripts/render-mcp-configs.py",
+    "Commit the manifest edit and regenerated mcp/rendered/ in one commit.",
+    "Rendered files contain placeholders like ${N8N_MCP_AUTH_TOKEN}, never real tokens.",
+    "Format is plain JSON so the renderer has zero external dependencies — reproducible from a clean clone on any Python 3.x."
+  ],
+  "servers": {
+    "n8n-mcp": {
+      "description": "Community n8n-mcp server (rich builder layer on top of the n8n API).",
+      "url": "https://n8n-mcp.samandrey.work/mcp",
+      "transport": "http",
+      "auth": {
+        "type": "bearer",
+        "token_env": "N8N_MCP_AUTH_TOKEN"
+      },
+      "enabled_for": ["claude-cowork", "codex"],
+      "notes": "Image pinned by digest in docker-compose.yml (commit ba43ec9). See docs/N8N-MCP.md for deployment and smoke-test procedure."
+    }
+  },
+  "clients": {
+    "claude-cowork": {
+      "kind": "cowork-custom-connector",
+      "description": "Claude running inside the Cowork desktop app.",
+      "config_hint": "Added manually through the Cowork UI. Renderer emits a copy-paste instruction."
+    },
+    "codex": {
+      "kind": "codex-cli",
+      "description": "OpenAI Codex CLI.",
+      "config_path": "~/.codex/config.toml",
+      "config_hint": "Paste the rendered block into the user config file and restart Codex."
+    }
+  }
+}

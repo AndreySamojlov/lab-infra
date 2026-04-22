@@ -69,7 +69,14 @@ git clone <repo>
 cd lab-infra
 cp .env.example .env # fill required variables
 docker compose up -d
+
+# regenerate (or verify) the client-side MCP configs in mcp/rendered/
+python3 scripts/render-mcp-configs.py --check
 ```
+
+The MCP client layer is stdlib-only; `--check` must pass right after clone.
+See `docs/MCP-MANAGEMENT.md` for how to wire clients (Cowork, Codex) to the
+rendered configs.
 
 Verification:
 ```bash
