@@ -1,0 +1,35 @@
+# Single source of truth for MCP server configuration.
+#
+# Flow:
+#   edit this file  ->  python scripts/render-mcp-configs.py  ->  mcp/rendered/*
+#   commit both the edit and the regenerated files in the same commit.
+#
+# Secrets live in .env (or the user's shell environment). Rendered files
+# only contain placeholders like ${N8N_MCP_AUTH_TOKEN}, never real tokens,
+# which is why rendered/ is safe to keep in git.
+
+servers:
+  n8n-mcp:
+    description: Community n8n-mcp server (rich builder layer on top of the n8n API).
+    url: https://n8n-mcp.samandrey.work/mcp
+    transport: http
+    auth:
+      type: bearer
+      token_env: N8N_MCP_AUTH_TOKEN
+    enabled_for:
+      - claude-cowork
+      - codex
+    notes: |
+      Image pinned by digest in docker-compose.yml (commit ba43ec9).
+      See docs/N8N-MCP.md for deployment and smoke-test procedure.
+
+clients:
+  claude-cowork:
+    kind: cowork-custom-connector
+    description: Claude running inside the Cowork desktop app.
+    config_hint: Added manually through the Cowork UI. Renderer emits a copy-paste instruction.
+  codex:
+    kind: codex-cli
+    description: OpenAI Codex CLI.
+    config_path: ~/.codex/config.toml
+    config_hint: Paste the rendered block into the user config file and restart Codex.
