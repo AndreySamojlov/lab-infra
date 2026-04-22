@@ -39,7 +39,11 @@ services:
       - postgres
 
   n8n-mcp:
-    image: ghcr.io/czlonkowski/n8n-mcp/n8n-mcp:latest
+    # Pinned to the digest captured after the first successful rollout (2026-04-22).
+    # Bump by: docker pull ghcr.io/czlonkowski/n8n-mcp/n8n-mcp:<tag>
+    #          docker image inspect --format '{{index .RepoDigests 0}}' ghcr.io/czlonkowski/n8n-mcp/n8n-mcp:<tag>
+    # then paste the new @sha256:... here.
+    image: ghcr.io/czlonkowski/n8n-mcp/n8n-mcp@sha256:564cb0b1e9b967dbd1219edbcf4d2b32a788de954478fc81d638c6c3a05a7db2
     container_name: lab-n8n-mcp
     restart: unless-stopped
     environment:

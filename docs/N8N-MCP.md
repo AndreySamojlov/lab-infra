@@ -78,8 +78,23 @@ docker logs -f lab-n8n-mcp
 
 ## Image pin
 
-The platform currently uses:
+The platform is pinned to a specific digest for reproducibility, consistent with the pinning policy in `README.md` §9:
 
-- `ghcr.io/czlonkowski/n8n-mcp/n8n-mcp:latest`
+- `ghcr.io/czlonkowski/n8n-mcp/n8n-mcp@sha256:564cb0b1e9b967dbd1219edbcf4d2b32a788de954478fc81d638c6c3a05a7db2`
 
-This is intentional for the initial rollout because that is the currently published package path in GHCR. After the first successful deployment, it is worth following up with a digest pin for reproducibility.
+Digest captured 2026-04-22 after the first successful rollout and smoke test (bearer auth + `initialize` + `tools/list` handshake).
+
+### How to bump the pin
+
+```bash
+docker pull ghcr.io/czlonkowski/n8n-mcp/n8n-mcp:latest
+docker image inspect --format '{{index .RepoDigests 0}}' ghcr.io/czlonkowski/n8n-mcp/n8n-mcp:latest
+```
+
+Take the returned `...@sha256:...` string and paste it into `docker-compose.yml` for the `n8n-mcp` service. Then redeploy:
+
+```bash
+docker compose up -d n8n-mcp
+```
+
+Do not move back to a floating `:latest` tag — that would violate the platform's image pinning policy.
