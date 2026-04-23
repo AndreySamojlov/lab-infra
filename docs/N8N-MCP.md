@@ -69,6 +69,43 @@ curl -X POST https://n8n-mcp.samandrey.work/mcp \
 
 Expected result: JSON response with the tools list.
 
+## Client setup
+
+Client-side configuration is generated from `mcp/servers.json` by
+`scripts/render-mcp-configs.py`; the rendered per-client instructions
+live in `mcp/rendered/`. Do not edit the rendered files by hand.
+
+### Codex CLI
+
+Merge `mcp/rendered/codex.toml` into `~/.codex/config.toml`. Export
+`N8N_MCP_AUTH_TOKEN` in the environment from which Codex is launched,
+then restart Codex. Verified read+write smoke-test 2026-04-22.
+
+### Cowork / Claude Desktop (Windows, MSIX)
+
+See `mcp/rendered/claude-cowork.md` for the full instructions. Key
+points:
+
+- Config file lives in the MSIX-virtualized AppData path:
+  `%LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\Claude\claude_desktop_config.json`.
+- Bridge is `mcp-remote` launched via `npx`; requires Node.js >= 18 and
+  PowerShell ExecutionPolicy set to `RemoteSigned` so `npx.ps1` can run.
+- `N8N_MCP_AUTH_TOKEN` must be a Windows **user** env var before Cowork
+  starts. The rendered JSON uses two-step `${...}` substitution
+  (`Bearer ${N8N_MCP_AUTH_TOKEN}` in `env`, `Authorization:${AUTH_HEADER}`
+  in `args`) to work around a Windows arg-escaping bug in Claude Desktop
+  that mangles the space in `Bearer <token>` when it sits in `args`.
+- Cowork bridges host-side MCP servers into its sandboxed VM as
+  `type: "sdk"` entries in the `/mcp` dialog. The Local MCP servers
+  panel may briefly show `failed` during the first `npx` cold start —
+  that is a known UI/runtime race; the real check is whether the
+  server's tools respond (e.g. ask Claude to list workflows).
+- Bridge debug logs: `%USERPROFILE%\.mcp-auth\*_debug.log`.
+
+Verified running end-to-end from Cowork 2026-04-23 (`n8n_health_check`
+returns `status: ok`, `n8n_list_workflows` returns the live instance's
+workflow list).
+
 ## Logs
 
 ```bash

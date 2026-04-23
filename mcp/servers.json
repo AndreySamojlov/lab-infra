@@ -21,9 +21,10 @@
   },
   "clients": {
     "claude-cowork": {
-      "kind": "cowork-custom-connector",
+      "kind": "cowork-desktop-config",
       "description": "Claude running inside the Cowork desktop app.",
-      "config_hint": "Added manually through the Cowork UI. Renderer emits a copy-paste instruction."
+      "config_path": "%LOCALAPPDATA%\\Packages\\Claude_pzs8sxrjxfjjc\\LocalCache\\Roaming\\Claude\\claude_desktop_config.json",
+      "config_hint": "Merge the rendered mcpServers block into claude_desktop_config.json inside the MSIX sandbox. Cowork bridges host-side MCP servers into its VM as type='sdk'."
     },
     "codex": {
       "kind": "codex-cli",
