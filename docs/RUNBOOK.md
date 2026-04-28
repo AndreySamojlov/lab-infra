@@ -103,6 +103,54 @@ git log --oneline             # история
 - container metrics source for Prometheus
 
 ## n8n-mcp
+
+Dedicated MCP server for AI-assisted n8n workflow building. Hosted on the same VM and Docker network as `n8n`, reaches it over the internal Docker hostname `http://n8n:5678`.
+
+**Endpoints**
+- Base: `https://n8n-mcp.samandrey.work`
+- MCP for clients: `https://n8n-mcp.samandrey.work/mcp` (clients must use the `/mcp` path, not the root)
+- Health: `https://n8n-mcp.samandrey.work/health`
+
+**Required `.env` variables**
+```env
+N8N_MCP_API_KEY=<n8n-api-key-from-Settings-API>
+N8N_MCP_AUTH_TOKEN=<32+ char random; bearer for MCP clients>
+N8N_MCP_LOG_LEVEL=info
+```
+Compose maps `N8N_MCP_AUTH_TOKEN` to both `MCP_AUTH_TOKEN` and `AUTH_TOKEN`.
+
+**Deploy**
+```bash
+docker compose pull n8n-mcp
+docker compose up -d n8n-mcp caddy
+```
+On first introduction also confirm DNS for `n8n-mcp.samandrey.work` points to the VM.
+
+**Verify** (three levels)
+```bash
+# 1) Docker network
 docker exec lab-caddy wget -qO- http://n8n-mcp:3000/health
+
+# 2) Through Caddy on the server
 curl -vk --resolve n8n-mcp.samandrey.work:443:127.0.0.1 https://n8n-mcp.samandrey.work/health
+
+# 3) MCP endpoint (initialize handshake)
 TOKEN=$(grep '^N8N_MCP_AUTH_TOKEN=' .env | cut -d= -f2-) && curl -i -X POST https://n8n-mcp.samandrey.work/mcp -H "Authorization: Bearer $TOKEN" -H "Accept: application/json, text/event-stream" -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl-smoke-test","version":"1.0.0"}}}'
+```
+
+**Logs**
+```bash
+docker logs --tail 50 lab-n8n-mcp
+docker logs -f lab-n8n-mcp
+```
+
+**Image pin** (overrides README §9 floating tag for n8n-mcp)
+- Pinned digest: `ghcr.io/czlonkowski/n8n-mcp/n8n-mcp@sha256:564cb0b1e9b967dbd1219edbcf4d2b32a788de954478fc81d638c6c3a05a7db2`
+- To bump:
+  ```bash
+  docker pull ghcr.io/czlonkowski/n8n-mcp/n8n-mcp:latest
+  docker image inspect --format '{{index .RepoDigests 0}}' ghcr.io/czlonkowski/n8n-mcp/n8n-mcp:latest
+  ```
+  Paste the returned `...@sha256:...` into `docker-compose.yml` for the `n8n-mcp` service, then `docker compose up -d n8n-mcp`. Do not move back to a floating `:latest` tag.
+
+**Client setup**: see `mcp/rendered/claude-cowork.md` (Cowork) and `mcp/rendered/codex.toml` (Codex CLI), generated from `mcp/servers.json`. See `mcp/README.md` for the management-layer rationale.

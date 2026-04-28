@@ -61,7 +61,7 @@ Community n8n-mcp server (rich builder layer on top of the n8n API).
 
 **Notes:**
 
-> Image pinned by digest in docker-compose.yml (commit ba43ec9). See docs/N8N-MCP.md for deployment and smoke-test procedure.
+> Image pinned by digest in docker-compose.yml (commit ba43ec9). See docs/RUNBOOK.md (## n8n-mcp) for deployment and smoke-test procedure.
 
 ## Verification
 

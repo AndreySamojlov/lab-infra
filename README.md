@@ -75,8 +75,8 @@ python3 scripts/render-mcp-configs.py --check
 ```
 
 The MCP client layer is stdlib-only; `--check` must pass right after clone.
-See `docs/MCP-MANAGEMENT.md` for how to wire clients (Cowork, Codex) to the
-rendered configs.
+See `mcp/README.md` for the management-layer design and how to wire
+clients (Cowork, Codex) to the rendered configs.
 
 Verification:
 ```bash
@@ -214,7 +214,7 @@ Includes:
 - restart procedures
 - logs inspection
 - backup and restore
-- `n8n-mcp` setup and smoke-test notes in `docs/N8N-MCP.md`
+- `n8n-mcp` setup, smoke-test, and image-pin procedure
 
 ## 9. Versions and Upgrade Policy
 
