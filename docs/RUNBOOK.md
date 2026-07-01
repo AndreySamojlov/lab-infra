@@ -1,8 +1,13 @@
 # START / STOP
 ```bash
-docker compose up -d  # Start all services
-docker compose down  # Stop all service
-docker compose restart  #Restart all services
+docker compose up -d
+docker compose down
+docker compose restart
+
+# optional local-only service overlay; empty in the canonical platform repo
+docker compose -f services/docker-compose.yml --env-file services/.env up -d --build
+docker compose -f services/docker-compose.yml --env-file services/.env ps
+docker compose -f services/docker-compose.yml --env-file services/.env logs --tail 50
 ```
 # HEALTH-CHECK
 
@@ -17,6 +22,7 @@ docker compose restart  #Restart all services
 | **Внешний доступ**          | https://n8n.samandrey.work/<br>https://grafana.samandrey.work/                                                                                                                                                                                                                                                                        | UI открывается                                                                                                                                        | → доступ извне есть   |
 | **База данных**             | docker exec -it lab-postgres psql -U admin -d n8n                                                                                                                                                                                                                                                                                     | SELECT 1;                                                                                                                                             | → БД работает         |
 | **Логи**                    | docker logs -t --tail 10 lab-n8n  <br>docker logs -t --tail 10 lab-postgres  <br>docker logs -t --tail 10 lab-grafana<br>docker logs -t --tail 10 lab-loki<br>docker logs -t --tail 10 lab-promtail<br>docker logs -t --tail 10 lab-prometheus<br>docker logs -t --tail 10 lab-node-exporter    docker logs -t --tail 10 lab-cadvisor | нет FATAL <br>/ crash<br>/ restart loop                                                                                                               | → сервисы стабильны   |
+| **Локальный overlay services** | docker compose -f services/docker-compose.yml --env-file services/.env ps                                                                                                                                                                                                                                                             | overlay используется только если вы временно подняли свои приватные сервисы                                                                          | → overlay под контролем |
 
 
 
@@ -35,6 +41,14 @@ docker compose up -d --build                    # пересобрать (есл
 docker ps                      # список контейнеров  
 docker stats                   # нагрузка (CPU / RAM)  
 docker inspect lab-n8n         # подробности контейнера
+## Optional services overlay
+docker compose -f services/docker-compose.yml --env-file services/.env up -d --build
+docker compose -f services/docker-compose.yml --env-file services/.env ps
+docker compose -f services/docker-compose.yml --env-file services/.env logs --tail 50
+
+Канонический platform repo держит `services/docker-compose.yml` пустым.
+Если для эксперимента нужен внутренний сервис, держите его локально или в
+отдельном project repo, а не коммитьте сюда бизнес-логику.
 ## Logs
 docker logs --tail 50 lab-n8n  
 docker logs --tail 50 lab-n8n-mcp  
@@ -49,7 +63,9 @@ SELECT 1;        -- проверка
 \dt              -- список таблиц  
 \q               -- выход
 
-1. Start SSH tunnel: ssh -i ~/.ssh/id_ed25519 -L 15432:127.0.0.1:5432 root@104.248.41.116  
+1. Start SSH tunnel: `powershell -File scripts\db-tunnel.ps1` (keepalive + авто-реконнект; Ctrl+C — стоп)  
+	- разовый запуск вручную: ssh -i ~/.ssh/id_ed25519 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -N -L 15432:127.0.0.1:5432 root@104.248.41.116  
+	- без keepalive-опций NAT рвёт простаивающий туннель через 5–15 минут  
 2. Connect from DBeaver:  
 	- Host: localhost  
 	- Port: 15432  
@@ -57,12 +73,12 @@ SELECT 1;        -- проверка
 3. List databases: docker exec -it lab-postgres psql -U admin -l  
 4. Backup database  
 	- mkdir -p /opt/backups/postgres  
-	- docker exec lab-postgres pg_dump -U admin -d career_upgrade_lab > /opt/backups/postgres/career_upgrade_lab.sql  
+	- docker exec lab-postgres pg_dump -U admin -d <analytics_db> > /opt/backups/postgres/<analytics_db>.sql  
 5. Restore database  
-	- docker exec -i lab-postgres psql -U admin -d career_upgrade_lab < /opt/backups/postgres/career_upgrade_lab.sql  
+	- docker exec -i lab-postgres psql -U admin -d <analytics_db> < /opt/backups/postgres/<analytics_db>.sql  
 6. Test restore: 
-	- CREATE DATABASE career_upgrade_lab_test;  
-	- docker exec -i lab-postgres psql -U admin -d career_upgrade_lab_test < backup.sql  
+	- CREATE DATABASE <analytics_db>_test;  
+	- docker exec -i lab-postgres psql -U admin -d <analytics_db>_test < backup.sql  
 7. Basic checks:   
 	- SELECT current_database();  
 	- SELECT count(') FROM information_schema.tables;
@@ -116,6 +132,8 @@ Dedicated MCP server for AI-assisted n8n workflow building. Hosted on the same V
 N8N_MCP_API_KEY=<n8n-api-key-from-Settings-API>
 N8N_MCP_AUTH_TOKEN=<32+ char random; bearer for MCP clients>
 N8N_MCP_LOG_LEVEL=info
+N8N_MCP_AUTH_RATE_LIMIT_WINDOW=900000
+N8N_MCP_AUTH_RATE_LIMIT_MAX=300
 ```
 Compose maps `N8N_MCP_AUTH_TOKEN` to both `MCP_AUTH_TOKEN` and `AUTH_TOKEN`.
 
@@ -154,3 +172,8 @@ docker logs -f lab-n8n-mcp
   Paste the returned `...@sha256:...` into `docker-compose.yml` for the `n8n-mcp` service, then `docker compose up -d n8n-mcp`. Do not move back to a floating `:latest` tag.
 
 **Client setup**: see `mcp/rendered/claude-cowork.md` (Cowork) and `mcp/rendered/codex.toml` (Codex CLI), generated from `mcp/servers.json`. See `mcp/README.md` for the management-layer rationale.
+
+**Codex troubleshooting**
+- Codex uses direct remote HTTP MCP config (`url` plus `bearer_token_env_var`) for this endpoint.
+- Avoid `mcp-remote` for Codex here: observed desktop sessions can receive a server-side protocol `400` through the stdio bridge and surface it as a 120s timeout.
+- If an existing Codex dialog starts timing out MCP calls while `/health` and direct `/mcp` tools-call smoke tests pass, fully restart Codex or open a fresh dialog. Config changes are read on startup.

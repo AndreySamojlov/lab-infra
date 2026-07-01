@@ -61,7 +61,7 @@ Community n8n-mcp server (rich builder layer on top of the n8n API).
 
 **Notes:**
 
-> Image pinned by digest in docker-compose.yml (commit ba43ec9). See docs/RUNBOOK.md (## n8n-mcp) for deployment and smoke-test procedure.
+> Image pinned by digest in docker-compose.yml (commit ba43ec9). Codex uses direct remote HTTP MCP config; avoid wrapping this endpoint in mcp-remote for Codex because that stdio bridge can turn server-side protocol errors into 120s tool-call timeouts. See docs/RUNBOOK.md (## n8n-mcp) for deployment and smoke-test procedure.
 
 ## Verification
 

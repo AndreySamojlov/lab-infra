@@ -32,6 +32,28 @@ The shape here is a **client-side manifest + generator**:
   them. Final application is manual on purpose: writing into user-home
   files crosses a trust boundary the platform does not own.
 
+### Server-side rate limiting
+
+The hosted `n8n-mcp` service sits behind Caddy and must run with
+`TRUST_PROXY=1`; otherwise the auth limiter sees Caddy's Docker IP for
+every external client. Compose also raises `AUTH_RATE_LIMIT_MAX` above the
+upstream default of 20 per 15 minutes, because MCP clients can spend many
+requests on handshake and tool calls during one working session.
+
+### Codex direct HTTP config
+
+Codex Desktop / CLI should use direct remote HTTP MCP config (`url` plus
+`bearer_token_env_var`) for this endpoint. Avoid wrapping it in
+`mcp-remote`: in observed Codex desktop sessions the local stdio bridge
+can receive a server-side protocol `400` and surface it as a 120s tool
+call timeout instead of a clear error.
+
+A Codex error shaped like `timed out awaiting tools/call` after 120s is
+therefore not enough to prove the platform server is down. Verify
+`/health`, then run a direct `/mcp` initialize/tools-call smoke test; if
+those pass, fully restart Codex or open a fresh dialog so the direct HTTP
+client config is loaded.
+
 Two deliberate constraints:
 
 - **Stdlib only.** JSON over YAML/TOML, no `pip install`, no

@@ -16,7 +16,7 @@
         "token_env": "N8N_MCP_AUTH_TOKEN"
       },
       "enabled_for": ["claude-cowork", "codex"],
-      "notes": "Image pinned by digest in docker-compose.yml (commit ba43ec9). See docs/RUNBOOK.md (## n8n-mcp) for deployment and smoke-test procedure."
+      "notes": "Image pinned by digest in docker-compose.yml (commit ba43ec9). Codex uses direct remote HTTP MCP config; avoid wrapping this endpoint in mcp-remote for Codex because that stdio bridge can turn server-side protocol errors into 120s tool-call timeouts. See docs/RUNBOOK.md (## n8n-mcp) for deployment and smoke-test procedure."
     }
   },
   "clients": {
@@ -28,9 +28,9 @@
     },
     "codex": {
       "kind": "codex-cli",
-      "description": "OpenAI Codex CLI.",
+      "description": "OpenAI Codex Desktop / CLI.",
       "config_path": "~/.codex/config.toml",
-      "config_hint": "Paste the rendered block into the user config file and restart Codex."
+      "config_hint": "Paste the rendered block into the user config file and fully restart Codex; existing MCP client sessions do not reread config."
     }
   }
 }
