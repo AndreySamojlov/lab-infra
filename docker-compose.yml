@@ -51,6 +51,9 @@ services:
       MCP_MODE: http
       PORT: 3000
       LOG_LEVEL: ${N8N_MCP_LOG_LEVEL:-info}
+      TRUST_PROXY: "1"
+      AUTH_RATE_LIMIT_WINDOW: ${N8N_MCP_AUTH_RATE_LIMIT_WINDOW:-900000}
+      AUTH_RATE_LIMIT_MAX: ${N8N_MCP_AUTH_RATE_LIMIT_MAX:-300}
       N8N_API_URL: http://n8n:5678
       N8N_API_KEY: ${N8N_MCP_API_KEY}
       MCP_AUTH_TOKEN: ${N8N_MCP_AUTH_TOKEN}
@@ -70,8 +73,8 @@ services:
       GF_SERVER_SERVE_FROM_SUB_PATH: "false"
       GF_SECURITY_COOKIE_SECURE: "true"
       GF_SECURITY_COOKIE_SAMESITE: "lax"
-      GF_LOG_LEVEL: debug
-      GF_SERVER_ROUTER_LOGGING: "true"
+      GF_LOG_LEVEL: warn
+      GF_SERVER_ROUTER_LOGGING: "false"
       GF_SERVER_PROTOCOL: http
       GF_SERVER_ENABLE_GZIP: "false"
 
@@ -83,6 +86,11 @@ services:
       GF_AUTH_PROXY_ENABLE_LOGIN_TOKEN: "true"
     volumes:
       - grafana_data:/var/lib/grafana
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   prometheus:
     image: prom/prometheus:v3.10.0
@@ -109,6 +117,13 @@ services:
     image: gcr.io/cadvisor/cadvisor:v0.55.1
     container_name: lab-cadvisor
     restart: unless-stopped
+    command:
+      - --docker_only=true
+      - --store_container_labels=false
+      - --housekeeping_interval=30s
+      - --max_housekeeping_interval=5m0s
+      - --global_housekeeping_interval=5m0s
+      - --enable_metrics=cpu,memory,network,oom_event
     privileged: true
     devices:
       - /dev/kmsg:/dev/kmsg
@@ -121,16 +136,25 @@ services:
     image: grafana/loki:3.0.0
     container_name: lab-loki
     restart: unless-stopped
-    command: -config.file=/etc/loki/config.yml
+    command:
+      - -config.file=/etc/loki/config.yml
+      - -log.level=warn
     volumes:
       - ./monitoring/loki/config.yml:/etc/loki/config.yml:ro
       - loki_data:/loki
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   promtail:
     image: grafana/promtail:3.0.0
     container_name: lab-promtail
     restart: unless-stopped
-    command: -config.file=/etc/promtail/config.yml
+    command:
+      - -config.file=/etc/promtail/config.yml
+      - -log.level=warn
     volumes:
       - ./monitoring/promtail/config.yml:/etc/promtail/config.yml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
@@ -150,9 +174,9 @@ services:
     networks:
       - default
 
-  # Only Grafana is behind oauth2-proxy (Google SSO).
+  # Grafana is behind oauth2-proxy (Google SSO).
   # n8n is exposed directly to Caddy and uses its own built-in user
-  # management (email + password). See README section 3 for the access model.
+  # management (email + password). See README for the access model.
   oauth2-proxy-grafana:
     image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.1
     container_name: lab-oauth2-proxy-grafana
@@ -181,3 +205,7 @@ volumes:
   loki_data:
   caddy_data:
   caddy_config:
+
+networks:
+  default:
+    name: lab-internal
