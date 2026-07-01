@@ -2,6 +2,13 @@
 /backups/
 .env
 *.log
+services/.env
+
+# Python / test caches
+__pycache__/
+*.pyc
+.pytest_cache/
+pytest-cache-files-*/
 
 # Editor / OS junk
 *.save

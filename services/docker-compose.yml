@@ -1,0 +1,6 @@
+services: {}
+
+networks:
+  lab-services:
+    name: ${LAB_SERVICES_NETWORK:-lab-internal}
+    external: true
