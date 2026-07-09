@@ -63,9 +63,22 @@ SELECT 1;        -- проверка
 \dt              -- список таблиц  
 \q               -- выход
 
-1. Start SSH tunnel: `powershell -File scripts\db-tunnel.ps1` (keepalive + авто-реконнект; Ctrl+C — стоп)  
-	- разовый запуск вручную: ssh -i ~/.ssh/id_ed25519 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -N -L 15432:127.0.0.1:5432 root@104.248.41.116  
-	- без keepalive-опций NAT рвёт простаивающий туннель через 5–15 минут  
+1. SSH-туннель поддерживается автоматически: Windows Scheduled Task `lab-do-db-tunnel`
+   (триггер «при входе в систему») держит `scripts\db-tunnel.ps1` живым — keepalive +
+   авто-реконнект внутри скрипта, и перезапуск самой задачи, если процесс всё же
+   упадёт целиком. Лог: `%USERPROFILE%\.lab-infra\db-tunnel.log`.
+	- проверить статус: `Get-ScheduledTask -TaskName lab-do-db-tunnel`
+	- **перед любым ручным запуском проверьте, не занят ли уже порт**:
+	  `Get-NetTCPConnection -LocalPort 15432 -State Listen` — если что-то уже слушает,
+	  не поднимайте второй туннель поверх. Разные несогласованные ad-hoc туннели на
+	  один и тот же порт (без цикла реконнекта, без надзора) — сами по себе источник
+	  нестабильности: конкурируют за порт и осиротевают без восстановления, когда
+	  падают. Используйте общий supervised-туннель выше, а не отдельный `ssh -L 15432:...`.
+	- разовый ручной запуск (только если задача не заведена на этой машине):
+	  `powershell -File scripts\db-tunnel.ps1` (Ctrl+C — стоп)
+	- сервер дополнительно настроен на `ClientAliveInterval 30` / `ClientAliveCountMax 3`
+	  (`/etc/ssh/sshd_config` на VM) — без этого NAT/простой рвёт туннель без
+	  быстрого обнаружения ни одной стороной
 2. Connect from DBeaver:  
 	- Host: localhost  
 	- Port: 15432  
