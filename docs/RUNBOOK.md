@@ -190,3 +190,22 @@ docker logs -f lab-n8n-mcp
 - Codex uses direct remote HTTP MCP config (`url` plus `bearer_token_env_var`) for this endpoint.
 - Avoid `mcp-remote` for Codex here: observed desktop sessions can receive a server-side protocol `400` through the stdio bridge and surface it as a 120s timeout.
 - If an existing Codex dialog starts timing out MCP calls while `/health` and direct `/mcp` tools-call smoke tests pass, fully restart Codex or open a fresh dialog. Config changes are read on startup.
+
+## SSH-показатели tunnel-daemon
+
+Экспортёр на `lab-do` работает как `tunnel-ssh-exporter.service`. Он слушает `172.17.0.1:9817`, а Prometheus опрашивает задание `tunnel-ssh` раз в 60 секунд. UFW пропускает TCP 9817 только с `172.18.0.0/16` через `br-a10623c2d3db` к `172.17.0.1`. Перед переустановкой проверьте адреса Docker-мостов: имена интерфейсов и подсети могут измениться.
+
+Исходники и unit находятся в репозитории `tunnel-daemon` (`server/` и `deploy/tunnel-ssh-exporter.service`). Для обновления перенесите только эти файлы в `/opt/tunnel-daemon/server/` и `/etc/systemd/system/tunnel-ssh-exporter.service`, затем выполните `systemctl daemon-reload` и `systemctl restart tunnel-ssh-exporter.service`. Не переносите `registry.toml` и ключи.
+
+Проверка:
+
+```sh
+systemctl is-enabled tunnel-ssh-exporter.service
+systemctl is-active tunnel-ssh-exporter.service
+curl -fsS http://172.17.0.1:9817/metrics | grep tunnel_ssh_collector_success
+ufw status numbered | grep 9817
+```
+
+Проверяйте задание `tunnel-ssh` в Prometheus Targets: `up=1`; старые задания должны оставаться `up`. При `tunnel_ssh_collector_success{source="<источник>"}=0` проверьте `journalctl -u tunnel-ssh-exporter.service -n 50 --no-pager`. Данные журнала считаются с первого запуска; файл курсора и счётчиков находится в `/var/lib/tunnel-ssh-exporter/journal-state.json`.
+
+Для отката удалите только задание `tunnel-ssh` из активного `/opt/lab-infra/monitoring/prometheus/prometheus.yml`, предварительно сохранив копию файла и проверив новый конфиг через `promtool check config`. Отправьте SIGHUP только контейнеру `lab-prometheus`. Затем выполните `systemctl disable --now tunnel-ssh-exporter.service` и удалите правило UFW с комментарием `tunnel-ssh-metrics` по его номеру из `ufw status numbered`. Не трогайте остальные правила и задания. Точка восстановления первого развёртывания лежит в `/root/tunnel-ssh-exporter-backup-20261019T121045Z`.
